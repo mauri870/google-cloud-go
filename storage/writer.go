@@ -63,6 +63,14 @@ type Writer struct {
 	// ChunkSize must be set before the first Write call.
 	ChunkSize int
 
+	// Buffer is the temporary buffer used for chunk copying.
+	// This allows users to specify their own buffers in order to avoid allocations.
+	// If the buffer is nil, empty or too small a new buffer of ChunkSize size will
+	// be allocated for each upload.
+	//
+	// Buffer should have capacity >= ChunkSize.
+	Buffer []byte
+
 	// ProgressFunc can be used to monitor the progress of a large write.
 	// operation. If ProgressFunc is not nil and writing requires multiple
 	// calls to the underlying service (see
@@ -110,6 +118,9 @@ func (w *Writer) open() error {
 	}
 	mediaOpts := []googleapi.MediaOption{
 		googleapi.ChunkSize(w.ChunkSize),
+	}
+	if w.Buffer != nil {
+		mediaOpts = append(mediaOpts, googleapi.WithBuffer(w.Buffer))
 	}
 	if c := attrs.ContentType; c != "" {
 		mediaOpts = append(mediaOpts, googleapi.ContentType(c))
